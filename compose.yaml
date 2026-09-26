@@ -1,0 +1,52 @@
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: kingai
+      MYSQL_USER: kingai
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD in the root .env}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD in the root .env}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+  backend:
+    build: ./Backend
+    environment:
+      DATABASE_URL: mysql+pymysql://kingai:${MYSQL_PASSWORD}@mysql:3306/kingai?charset=utf8mb4
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in the root .env}
+      WEBRTC_STUN_URLS: ${WEBRTC_STUN_URLS:-stun:stun.l.google.com:19302}
+      WEBRTC_TURN_URL: ${WEBRTC_TURN_URL:-}
+      WEBRTC_TURN_USERNAME: ${WEBRTC_TURN_USERNAME:-}
+      WEBRTC_TURN_PASSWORD: ${WEBRTC_TURN_PASSWORD:-}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:4000}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:4000}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      AI_BASE_URL: ${AI_BASE_URL:-}
+      AI_API_KEY: ${AI_API_KEY:-}
+      AI_MODEL: ${AI_MODEL:-}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    volumes:
+      - backend_storage:/srv/storage
+  frontend:
+    build: ./Frontend
+    environment:
+      SSR_ALLOWED_HOSTS: ${SSR_ALLOWED_HOSTS:-localhost,127.0.0.1}
+    ports:
+      - "4000:4000"
+    depends_on:
+      - backend
+volumes:
+  mysql_data:
+  backend_storage:
+

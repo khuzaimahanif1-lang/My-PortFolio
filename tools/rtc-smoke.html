@@ -1,0 +1,56 @@
+<!doctype html><meta charset="utf-8"><title>Local WebRTC transport verification</title>
+<style>body{background:#10141b;color:#ebeadf;font:16px system-ui;padding:35px;max-width:1100px;margin:auto}button{padding:14px 22px;background:#d7ad5d;color:#111;border:0;border-radius:8px;font:inherit}video{width:45%;background:#050608;border-radius:10px;margin:12px}pre{white-space:pre-wrap;font-size:13px;line-height:1.7}output{display:block;padding:15px}h1{font-size:28px}</style>
+<h1>Local audio, video, and desktop transport checks</h1><p>Uses generated audio and canvas tracks with disposable accounts. Your camera, microphone, desktop, and native input helper are never accessed.</p><button id="start">Run generated-media checks</button><output id="run"></output><output id="result">Ready</output><div><video id="a" autoplay playsinline muted></video><video id="b" autoplay playsinline muted></video></div><pre id="log"></pre>
+<script>
+const start=document.querySelector('#start'),result=document.querySelector('#result'),log=document.querySelector('#log');
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));let checks=0;
+function pass(label){checks++;log.textContent+='PASS '+label+'\n';}
+async function wait(predicate,label){const until=Date.now()+45000;while(Date.now()<until){if(await predicate()){pass(label);return;}await sleep(200);}throw Error('Timed out: '+label);}
+start.onclick=async()=>{
+ start.disabled=true;const tag='qa-rtc-'+crypto.randomUUID();document.querySelector('#run').textContent=tag;result.textContent='Running';
+ const users=[],sockets=[],peers=[];let currentCall=null,streams=[],context=null,oscillator=null,animation=null;
+ async function api(index,path,body,method='POST'){const headers={'Content-Type':'application/json'};if(users[index])headers.Authorization='Bearer '+users[index].access_token;const response=await fetch('/api/'+path,{method,credentials:'omit',headers,...(method==='GET'?{}:{body:JSON.stringify(body||{})})});const data=await response.json();if(!response.ok)throw Error(path+': '+response.status+' '+JSON.stringify(data.detail));return data;}
+ try{
+  for(let i=0;i<2;i++){const password=crypto.randomUUID()+'aA1';users[i]=await api(i,'auth/signup',{full_name:'RTC smoke '+(i?'Bob':'Alice'),email:tag+'-'+i+'@example.com',password,confirm_password:password});}
+  pass('two independent disposable accounts');
+  let signalHandlers=[null,null],pending=[[],[]];
+  for(let i=0;i<2;i++){const {ticket}=await api(i,'realtime/ticket');const ws=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host+'/api/ws?ticket='+ticket);sockets[i]=ws;await new Promise((resolve,reject)=>{ws.onopen=resolve;ws.onerror=reject;});ws.onmessage=e=>{const event=JSON.parse(e.data);if(event.type.startsWith('call:'))log.textContent+='EVENT '+i+' '+event.type+'\n';if(event.type==='call:signal'){if(signalHandlers[i])void signalHandlers[i](event.signal);else pending[i].push(event.signal);}};}
+  pass('two authenticated WebSocket sessions');
+  for(const kind of ['AUDIO','VIDEO','DESKTOP']){
+   result.textContent='Checking '+kind;peers.length=0;streams=[];pending=[[],[]];let queues=[Promise.resolve(),Promise.resolve()],candidates=[[],[]],echo=false,received=[new MediaStream(),new MediaStream()];
+   currentCall=await api(0,'calls',{kind,user_id:kind==='DESKTOP'?null:users[1].user.id});
+   if(kind==='DESKTOP'){await api(1,'calls/join',{code:currentCall.code});const before=await fetch('/api/calls/'+currentCall.id+'/signal',{method:'POST',credentials:'omit',headers:{'Content-Type':'application/json',Authorization:'Bearer '+users[0].access_token},body:JSON.stringify({type:'offer',sdp:'v=0'})});if(before.status!==409)throw Error('Code joined without approval');pass('desktop code enforces approval');await api(0,'calls/'+currentCall.id+'/accept');}else await api(1,'calls/'+currentCall.id+'/accept');
+   context=new AudioContext();await context.resume();const destination=context.createMediaStreamDestination();oscillator=context.createOscillator();const gain=context.createGain();gain.gain.value=0.02;oscillator.connect(gain).connect(destination);oscillator.start();
+   const canvas=document.createElement('canvas');canvas.width=640;canvas.height=360;const paint=canvas.getContext('2d');let frame=0;
+   function draw(){paint.fillStyle='#10253b';paint.fillRect(0,0,640,360);paint.fillStyle='#d7ad5d';paint.font='32px system-ui';paint.fillText(kind+' generated frame '+frame++,35,95);paint.fillRect((frame*5)%600,155,35,120);animation=requestAnimationFrame(draw);}draw();
+   const video=canvas.captureStream(20),source=new MediaStream([...destination.stream.getAudioTracks(),...(kind==='AUDIO'?[]:video.getVideoTracks())]);streams.push(source,video);
+   for(let i=0;i<2;i++){
+    const pc=new RTCPeerConnection({iceServers:(await api(i,'calls/config',null,'GET')).ice_servers});peers[i]=pc;
+    const local=i===0?source:(kind==='DESKTOP'?new MediaStream():new MediaStream(source.getTracks().map(t=>t.clone())));streams.push(local);
+    for(const track of local.getTracks())pc.addTrack(track,local);
+    if(!local.getTracks().length){pc.addTransceiver('video',{direction:'recvonly'});pc.addTransceiver('audio',{direction:'recvonly'});}
+    pc.onconnectionstatechange=()=>log.textContent+='PEER '+i+' '+pc.connectionState+' ICE '+pc.iceConnectionState+'\n';
+    pc.oniceconnectionstatechange=()=>log.textContent+='ICE '+i+' '+pc.iceConnectionState+'\n';
+    pc.onicecandidateerror=e=>log.textContent+='ICE gathering error '+e.errorCode+'\n';
+    pc.ontrack=e=>{log.textContent+='TRACK '+i+' '+e.track.kind+'\n';received[i].addTrack(e.track);document.querySelector(i?'#b':'#a').srcObject=received[i];};
+    pc.onicecandidate=e=>{if(e.candidate)log.textContent+='CANDIDATE '+i+' '+e.candidate.type+' '+e.candidate.protocol+' mDNS='+String(e.candidate.address?.endsWith('.local'))+'\n';else log.textContent+='GATHERED '+i+'\n';if(e.candidate)void api(i,'calls/'+currentCall.id+'/signal',{type:'candidate',candidate:e.candidate.toJSON()}).catch(err=>log.textContent+=err.message+'\n');};
+    signalHandlers[i]=signal=>{log.textContent+='SIGNAL '+i+' '+signal.type+'\n';queues[i]=queues[i].then(async()=>{
+     if(signal.type==='candidate'){if(pc.remoteDescription){await pc.addIceCandidate(signal.candidate);log.textContent+='APPLIED candidate '+i+'\n';}else candidates[i].push(signal.candidate);return;}
+     await pc.setRemoteDescription({type:signal.type,sdp:signal.sdp});for(const candidate of candidates[i].splice(0))await pc.addIceCandidate(candidate);
+     if(signal.type==='offer'){const answer=await pc.createAnswer();await pc.setLocalDescription(answer);await api(i,'calls/'+currentCall.id+'/signal',{type:'answer',sdp:answer.sdp});}
+    }).catch(err=>{log.textContent+='SIGNAL '+err.message+'\n';});return queues[i];};
+    for(const signal of pending[i].splice(0))void signalHandlers[i](signal);
+   }
+   const channel=peers[0].createDataChannel('collaboration');channel.onmessage=e=>{if(e.data==='pointer-echo')echo=true;};peers[1].ondatachannel=e=>{e.channel.onmessage=message=>{if(message.data==='pointer-test')e.channel.send('pointer-echo');};};
+   const offer=await peers[0].createOffer();await peers[0].setLocalDescription(offer);await api(0,'calls/'+currentCall.id+'/signal',{type:'offer',sdp:offer.sdp});
+   await wait(()=>peers.every(pc=>pc.connectionState==='connected'),kind+' peer connection');
+   await wait(async()=>{const stats=await peers[1].getStats();return [...stats.values()].some(s=>s.type==='inbound-rtp'&&s.kind==='audio'&&s.packetsReceived>3);},kind+' received audio packets');
+   if(kind!=='AUDIO')await wait(async()=>{const stats=await peers[1].getStats();return [...stats.values()].some(s=>s.type==='inbound-rtp'&&s.kind==='video'&&s.framesDecoded>1);},kind+' decoded moving video frames');
+   await wait(()=>channel.readyState==='open',kind+' data channel');channel.send('pointer-test');await wait(()=>echo,kind+' collaboration data echo');
+   await api(0,'calls/'+currentCall.id+'/end');currentCall=null;for(const pc of peers)pc.close();for(const stream of streams)stream.getTracks().forEach(t=>t.stop());oscillator.stop();oscillator=null;await context.close();context=null;cancelAnimationFrame(animation);signalHandlers=[null,null];
+  }
+  result.textContent='PASS: '+checks+' real WebRTC transport checks across audio, video, and desktop sessions.';
+ }catch(error){result.textContent='FAIL: '+error.message;log.textContent+=error.stack+'\n';}
+ finally{if(currentCall)try{await api(0,'calls/'+currentCall.id+'/end');}catch{}for(const pc of peers)pc.close();for(const stream of streams)stream.getTracks().forEach(t=>t.stop());try{oscillator?.stop();await context?.close();}catch{}cancelAnimationFrame(animation);sockets.forEach(ws=>ws.close());start.disabled=false;}
+};
+</script>

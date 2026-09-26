@@ -1,0 +1,14 @@
+Backend/.venv/
+Backend/storage/
+Frontend/node_modules/
+Frontend/dist/
+Frontend/.angular/
+.env
+.env.*
+!.env.example
+__pycache__/
+*.py[cod]
+docs/screenshots/
+
+
+tools/node_modules/

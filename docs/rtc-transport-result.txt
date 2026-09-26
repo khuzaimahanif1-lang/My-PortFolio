@@ -1,0 +1,10 @@
+Verified 2026-09-12 against production preview at 127.0.0.1:4000.
+Disposable run qa-rtc-1d2b5384-a0ba-454c-bd7c-3914d093f639.
+17 real WebRTC transport checks passed.
+Two independent synthetic accounts and authenticated WebSocket sessions.
+AUDIO: connection, received audio packets, open data channel, collaboration echo.
+VIDEO: connection, received audio packets, decoded moving video frames, open data channel, collaboration echo.
+DESKTOP: code requires host approval, connection, received audio packets, decoded moving video frames, open data channel, collaboration echo.
+Generated oscillator audio and canvas video; no real device capture or native input.
+Authenticated loopback TURN relay used; some unavailable STUN gathering endpoints reported 701, but relay connections succeeded.
+Disposable accounts deleted; temporary served test harness removed.
