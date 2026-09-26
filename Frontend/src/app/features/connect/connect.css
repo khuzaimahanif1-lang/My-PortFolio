@@ -1,0 +1,5 @@
+:host{display:block;min-width:0}
+:host(.chat-mode){display:flex;flex-direction:column;flex:1;min-height:0;height:100%}
+:host(.chat-mode) .communication-tabs{flex-shrink:0;overflow:visible;margin-bottom:16px;gap:8px}
+:host(.chat-mode) .communication-tabs button{justify-content:center;padding:10px 12px}
+@media(max-width:700px){:host(.chat-mode) .communication-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;margin-bottom:12px;border-bottom:0}:host(.chat-mode) .communication-tabs button{font-size:12px;padding:10px 6px;border:1px solid var(--border);border-radius:7px}:host(.chat-mode) .communication-tabs button.active{border-color:var(--gold);background:color-mix(in srgb,var(--gold) 8%,transparent)}}

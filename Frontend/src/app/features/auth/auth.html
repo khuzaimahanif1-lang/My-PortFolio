@@ -1,0 +1,29 @@
+<div class="auth-page"><a class="auth-back" routerLink="/"><app-icon name="left" [size]="16" /> Back to the portfolio</a>
+  <section class="auth-story"><a class="brand" routerLink="/"><span class="brand-emblem"><img src="/assets/kh-professional.png" alt="KH logo" width="52" height="52" /></span><span>KING AI<small>KHUZAIMA HANIF</small></span></a>
+    <div class="auth-story-content"><span class="eyebrow">YOUR IDEAS DESERVE A SPACE</span><h1>Less noise.<br>More clarity.<br><em>Limitless possibility.</em></h1><p>One connected place to build projects,<br>capture thoughts, and keep moving forward.</p><img src="/assets/kh-professional.png" class="auth-story-logo" alt="Gold and silver crowned KH emblem" width="240" height="240" /></div>
+    <span class="auth-story-footer">PRIVATE. PERSONAL. YOURS. <app-icon name="shield" [size]="15" /></span></section>
+  <section class="auth-form-side"><div class="auth-form-card">
+    <span class="auth-form-icon"><app-icon [name]="kind==='unlock'?'lock':'sparkles'" [size]="26" /></span><span class="eyebrow">{{kind==='unlock'?'SECURE WORKSPACE':'WELCOME TO KING AI'}}</span>
+    <h2>{{titles[kind]}}</h2><p>{{subtitles[kind]}}</p>
+    @if(kind==='unlock'){<div class="unlock-user"><span class="avatar">{{auth.user()?.full_name?.slice(0,1)}}</span><span>{{auth.user()?.full_name}}<small>{{auth.user()?.email}}</small></span></div>}
+    @if(auth.notice()&&kind==='login'){<p class="session-notice" role="status">{{auth.notice()}}</p>}
+    @if(success()){<div class="success-message" role="status"><app-icon name="check" />{{success()}}</div><a class="button primary full-width" routerLink="/login">Back to sign in <app-icon name="right" /></a>}
+    @else{
+      <form #form="ngForm" (ngSubmit)="form.valid&&submit()">
+        @if(kind==='signup'){<label>Full name<input name="fullName" [(ngModel)]="fullName" required minlength="2" maxlength="100" autocomplete="name" placeholder="Your full name" /></label>}
+        @if(kind==='login'||kind==='signup'||kind==='forgot'){<label>Email address<input name="email" type="email" [(ngModel)]="email" required email maxlength="254" autocomplete="email" placeholder="you@example.com" /></label>}
+        @if(kind!=='forgot'){<label>Password<div class="password-input"><input name="password" [type]="showPassword?'text':'password'" [(ngModel)]="password" required minlength="8" maxlength="72" [autocomplete]="kind==='signup'||kind==='reset'?'new-password':'current-password'" placeholder="Enter your password" /><button type="button" (click)="showPassword=!showPassword" [attr.aria-label]="showPassword?'Hide password':'Show password'">{{showPassword?'Hide':'Show'}}</button></div></label>}
+        @if(kind==='signup'){<label>Confirm password<input name="confirm" type="password" [(ngModel)]="confirm" required minlength="8" maxlength="72" autocomplete="new-password" placeholder="Enter it once more" /></label><span class="form-hint">Use at least 8 characters. Your password is securely hashed.</span>}
+        @if(kind==='login'){<div class="form-between"><label class="checkbox-label"><input type="checkbox" name="remember" [(ngModel)]="remember" />Remember me</label><a routerLink="/forgot-password">Forgot password?</a></div>}
+        @if(error()){<p class="form-error" role="alert">{{error()}}</p>}
+        @if(busy()){<app-loader label="Securing your workspace" />}
+        <button class="button primary full-width" [disabled]="busy()||!form.valid||kind==='signup'&&password!==confirm" type="submit">{{kind==='signup'?'Create workspace':kind==='unlock'?'Unlock workspace':kind==='forgot'?'Send recovery link':kind==='reset'?'Reset password':'Sign in'}}<app-icon name="right" /></button>
+      </form>
+      @if(kind==='login'){<p class="auth-switch">New here? <a routerLink="/signup">Create your workspace</a></p>}
+      @if(kind==='signup'){<p class="auth-switch">Already have an account? <a routerLink="/login">Sign in</a></p>}
+      @if(kind==='unlock'){<p class="auth-switch"><a routerLink="/forgot-password">Forgot your password?</a> · <button class="inline-link" (click)="auth.logout()">Switch account</button></p>}
+    }
+    <div class="auth-security"><app-icon name="shield" [size]="14" />Your workspace stays private and secure.</div>
+  </div></section>
+</div>
+

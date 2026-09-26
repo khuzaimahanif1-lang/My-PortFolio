@@ -1,0 +1,24 @@
+<div class="notepad-heading"><h1>My notepad<span class="gold">.</span></h1><button class="button primary small-button" [disabled]="busy()" (click)="beginNew()"><app-icon name="plus" [size]="16" />New note</button></div>
+@if(busy()){<app-loader label="Opening your notes" />}
+@else if(error()){<div class="panel empty-state"><h3>Notepad unavailable.</h3><p>{{error()}}</p><button class="button secondary" (click)="load()">Try again</button></div>}
+@else{
+<div class="panel notepad" [class.mobile-editing]="mobileEditing()">
+ <aside class="note-sidebar">
+  <label class="search-field"><app-icon name="search" [size]="15" /><input [(ngModel)]="query" placeholder="Search notes…" aria-label="Search notes" /></label>
+  <div class="note-filters"><button [class.active]="filter()==='all'" (click)="chooseFilter('all')">All notes</button><button [class.active]="filter()==='pinned'" (click)="chooseFilter('pinned')" aria-label="Pinned notes"><app-icon name="pin" [size]="14" /></button><button [class.active]="filter()==='favorites'" (click)="chooseFilter('favorites')" aria-label="Favorite notes"><app-icon name="star" [size]="14" /></button><button [class.active]="filter()==='archived'" (click)="chooseFilter('archived')" aria-label="Archived notes"><app-icon name="archive" [size]="14" /></button></div>
+  <div class="note-list">@for(note of visible();track note.id){<button class="note-list-item" [class.active]="selected()?.id===note.id" (click)="select(note)"><span class="note-list-title">{{note.title}}@if(note.pinned){<app-icon name="pin" [size]="12" />}</span><small>{{note.content.slice(0,75)}}</small><span>{{note.category}} · {{note.updated_at+'Z'|date:'MMM d'}}</span></button>}@empty{<p class="subtle note-empty">No notes in this view.</p>}</div>
+  @if(total()>100){<div class="pagination"><button [disabled]="page===1" (click)="changePage(-1)">Previous</button><span>{{page}}</span><button [disabled]="page*100>=total()" (click)="changePage(1)">Next</button></div>}
+ </aside>
+ <div class="note-editor">
+  @if(selected()||creating()){
+   <div class="note-editor-toolbar"><button class="icon-button notes-back" aria-label="Back to notes" (click)="mobileEditing.set(false)"><app-icon name="left" [size]="16" /></button><span class="save-state" aria-live="polite" [class.unsaved]="savedState()!=='All changes saved'">{{savedState()}}</span><div class="row-actions"><button class="icon-button" [class.active]="draft.pinned" aria-label="Toggle pin" (click)="toggle('pinned')"><app-icon name="pin" [size]="16" /></button><button class="icon-button" [class.active]="draft.favorite" aria-label="Toggle favorite" (click)="toggle('favorite')"><app-icon name="star" [size]="16" /></button><button class="icon-button" aria-label="Toggle archive" (click)="toggle('archived')"><app-icon name="archive" [size]="16" /></button>@if(selected()){<button class="icon-button" aria-label="Delete note" (click)="deleting.set(true)"><app-icon name="trash" [size]="16" /></button>}</div></div>
+   <input class="note-title-input" [(ngModel)]="draft.title" (ngModelChange)="changed()" aria-label="Note title" maxlength="200" placeholder="Untitled note" />
+   <div class="note-meta"><select [(ngModel)]="draft.category" (ngModelChange)="changed()" aria-label="Note category">@for(c of categories;track c){<option [value]="c">{{c}}</option>}</select><input [(ngModel)]="tags" (ngModelChange)="changed()" aria-label="Note tags" placeholder="Tags, comma separated" maxlength="1000" /><div class="segmented"><button [class.active]="!preview()" (click)="preview.set(false)">Write</button><button [class.active]="preview()" (click)="preview.set(true)">Preview</button></div></div>
+   @if(preview()){<div class="markdown-content note-preview" [innerHTML]="draft.content|markdown"></div>}
+   @else{<textarea class="note-content-input" [(ngModel)]="draft.content" (ngModelChange)="changed()" maxlength="100000" aria-label="Note content" placeholder="Start writing… Markdown is welcome."></textarea>}
+   <div class="note-editor-footer"><span>{{draft.content.length}} characters</span><button class="button secondary small-button" (click)="save(true)">Save note <app-icon name="check" [size]="14" /></button></div>
+  }@else{<div class="empty-state"><app-icon name="notes" [size]="32" /><h3>No note selected.</h3><button class="button primary" (click)="beginNew()"><app-icon name="plus" />Write a note</button></div>}
+ </div>
+</div>
+}
+@if(deleting()){<app-modal title="Delete note?" (closed)="deleting.set(false)"><div class="confirmation-body"><p>Delete “{{selected()?.title}}” from your personal notepad?</p><div class="modal-actions"><button class="button secondary" (click)="deleting.set(false)">Cancel</button><button class="button danger" (click)="remove()">Delete note</button></div></div></app-modal>}

@@ -1,0 +1,52 @@
+<section class="home-hero">
+  <div class="hero-grain"></div>
+  <div class="hero-copy"><span class="eyebrow hero-eyebrow"><span class="status-dot"></span> THE DIGITAL WORLD OF KHUZAIMA HANIF</span>
+    <h1>Building<br><em>intelligence.</em><br>Creating impact<span class="gold">.</span></h1>
+    <p class="hero-description">AI engineer. Full-stack developer. Relentlessly curious.<br>I turn ambitious ideas into thoughtful digital experiences.</p>
+    <div class="hero-buttons"><a class="button primary" routerLink="/projects">Explore my work <app-icon name="arrow" /></a><a class="button text-button" routerLink="/about">Meet the mind behind it <app-icon name="right" [size]="16" /></a></div>
+    <div class="portfolio-owner-tools hero-owner-tools" role="group" aria-label="Portfolio project controls"><button class="button secondary" (click)="addProject()"><app-icon name="plus" [size]="16" />Add project</button><button class="button secondary" (click)="manageProjects()"><app-icon name="edit" [size]="16" />Edit projects</button></div>
+    @if(accessMessage()){<p class="owner-access-message" role="status">{{accessMessage()}}</p>}
+    <div class="hero-signature"><span class="signature-line"></span><span>CODE WITH PURPOSE. CREATE WITH INTENTION.</span></div>
+  </div>
+  <div class="hero-art"><app-immersive /><app-orbit-scene /><div class="hero-logo-halo"></div>
+    <img class="hero-logo" src="/assets/kh-professional.png" alt="Khuzaima Hanif's gold and silver crowned KH emblem" width="460" height="460" fetchpriority="high" />
+    <span class="orbit-label orbit-label-top">ARTIFICIAL INTELLIGENCE</span><span class="orbit-label orbit-label-bottom">HUMAN CURIOSITY</span>
+    <div class="hero-art-caption"><span class="gold">KH / 01</span><span>A WORLD IN THE MAKING</span></div>
+  </div>
+  <div class="hero-bottom"><span>SCROLL TO DISCOVER <app-icon name="down" [size]="14" /></span><span>ANGULAR <i>×</i> PYTHON <i>×</i> AI</span><span>INDEPENDENT MIND. LIMITLESS POSSIBILITIES.</span></div>
+</section>
+@if(error()){<div class="connection-banner" role="status">{{error()}} <button (click)="load()">Try again</button></div>}
+
+<section class="public-section work-section landing-screen" id="owner-projects">
+  <div class="section-heading"><div><span class="eyebrow">01 / {{owner()?'OWNER PROJECTS':'SELECTED WORK'}}</span><h2>{{owner()?'Owner projects':'Selected work'}}<span class="gold">.</span></h2></div><div class="work-actions">@if(owner()){<button class="button primary" (click)="addProject()"><app-icon name="plus" [size]="16" />Add project</button><button class="inline-link" (click)="manageProjects()">Edit projects <app-icon name="edit" [size]="16" /></button>}@else{<a class="inline-link" routerLink="/projects">All projects <app-icon name="arrow" [size]="16" /></a>}</div></div>
+  @if(featuredProject();as project){
+    <article class="featured-project">
+      <a [routerLink]="projectLink(project)" [class]="'project-art art-'+selectedProject()%4">
+        <div class="project-art-grid"></div>@if(project.screenshots[0]||project.logo_url;as cover){<div class="project-cover-image"><app-project-image [src]="cover" [alt]="project.name+' preview'" [cover]="true" /></div>}@else{<app-icon [name]="project.category==='Full-stack'?'code':'brain'" [size]="76" />}
+        <span class="project-art-number">{{(selectedProject()+1).toString().padStart(2,'0')}}</span><span class="project-art-label">{{project.category}}</span>
+      </a>
+      <div class="featured-project-story"><div class="skill-tags"><span class="status-tag">{{project.status.replaceAll('_',' ')}}</span>@if(owner()){<span class="status-tag">{{project.is_public?'Published':'Draft · only you'}}</span>}</div>
+        <h3><a [routerLink]="projectLink(project)">{{project.name}}</a></h3><p class="featured-description">{{project.short_description||project.description.slice(0,300)}}</p>
+        <div class="project-technologies">@for(tech of project.technologies;track tech){<span>{{tech}}</span>}</div>
+        <div class="public-project-links">@if(project.live_url){<a class="button primary" [href]="project.live_url" target="_blank" rel="noopener noreferrer"><app-icon name="external" [size]="16" />Live demo</a>}@if(project.github_url){<a class="inline-link" [href]="project.github_url" target="_blank" rel="noopener noreferrer"><app-icon name="github" [size]="16" />Source code</a>}<a class="inline-link" [routerLink]="projectLink(project)">Project details <app-icon name="right" [size]="16" /></a></div>
+        @if(owner()){<button class="button secondary featured-edit" [attr.aria-label]="'Edit '+project.name" (click)="editProject(project)"><app-icon name="edit" [size]="16" />Edit project</button>}
+      </div>
+    </article>
+    <div class="project-selector" aria-label="Featured projects"><span>{{selectedProject()+1}} / {{projects().length}} projects</span><div><button class="icon-button" aria-label="Previous project" [disabled]="selectedProject()===0" (click)="showProject(-1)"><app-icon name="left" /></button><button class="icon-button" aria-label="Next project" [disabled]="selectedProject()+1>=projects().length" (click)="showProject(1)"><app-icon name="right" /></button></div></div>
+  }@else{<div class="panel empty-state"><app-icon name="projects" [size]="38" /><h3>A new chapter is taking shape.</h3><p>Published projects will appear here as the work develops.</p>@if(owner()){<button class="button primary" (click)="addProject()">Add your first project <app-icon name="plus" /></button>}</div>}
+</section>
+<section class="public-section intro-section landing-screen">
+  <div class="intro-content" reveal><div><span class="eyebrow">02 / THE MINDSET</span><h2>At the intersection of<br><em>curiosity & creation.</em></h2></div><div class="intro-body"><p>{{profile().bio}}</p><a class="inline-link" routerLink="/journey">Follow my journey <app-icon name="arrow" [size]="16" /></a></div></div>
+  <div class="technology-marquee" aria-label="Technologies"><span>ANGULAR</span><span class="gold">✦</span><span>PYTHON</span><span class="gold">✦</span><span>FASTAPI</span><span class="gold">✦</span><span>MYSQL</span><span class="gold">✦</span><span>ARTIFICIAL INTELLIGENCE</span><span class="gold">✦</span><span>TYPESCRIPT</span></div>
+</section>
+<section class="capability-section landing-screen">@if(motion()){<video class="atmosphere-video" autoplay loop muted playsinline preload="none" poster="/assets/sequence/frame-001.webp" aria-hidden="true"><source src="/assets/atmosphere.webm" type="video/webm" /></video>}
+  <div class="public-section"><span class="eyebrow" reveal>03 / THE TOOLKIT</span><h2 reveal>Thoughtful design.<br>Intelligent systems.<br><em>One connected vision.</em></h2><div class="capability-grid">
+    <article reveal><span class="capability-number">01</span><app-icon name="code" [size]="30" /><h3>Full-stack development</h3><p>From a polished interface to a reliable API. Modern web experiences built to connect the pieces.</p><a routerLink="/technology">Explore the stack <app-icon name="arrow" [size]="15" /></a></article>
+    <article reveal><span class="capability-number">02</span><app-icon name="brain" [size]="30" /><h3>Artificial intelligence</h3><p>Exploring practical intelligence: assistants, language, computer vision, and tools designed around real needs.</p><a routerLink="/ai">Enter the AI lab <app-icon name="arrow" [size]="15" /></a></article>
+    <article reveal><span class="capability-number">03</span><app-icon name="sparkles" [size]="30" /><h3>Continuous exploration</h3><p>New ideas, thoughtful experiments, and a learning journey that never stands still.</p><a routerLink="/research">See what's next <app-icon name="arrow" [size]="15" /></a></article>
+  </div></div>
+</section>
+<section class="public-section journey-section landing-screen"><span class="eyebrow" reveal>04 / ALWAYS IN PROGRESS</span><div class="section-heading" reveal><h2>The journey is<br><em>the most exciting part.</em></h2><p>Build. Learn. Grow.<br>A simple philosophy. An ambitious direction.</p></div><div class="journey-line">@for(item of profile().journey;track item.title){<article reveal><span class="journey-node"></span><span class="eyebrow">{{item.label}}</span><h3>{{item.title}}</h3><p>{{item.description}}</p></article>}</div></section>
+<section class="workspace-invitation public-section landing-screen"><div reveal><span class="eyebrow">BEYOND THE PORTFOLIO</span><h2>A private space<br>for your <em>next big idea.</em></h2><p>Organize projects. Capture thoughts. Track progress.<br>Your own command center, built for the way you create.</p><a class="button primary" routerLink="/signup">Create your workspace <app-icon name="arrow" /></a></div><div class="workspace-preview"><div class="preview-chrome"><span></span><span></span><span></span><small>KING AI / YOUR WORKSPACE</small></div><div class="preview-content"><span class="eyebrow">WELCOME TO YOUR COMMAND CENTER</span><h3>Clarity. Momentum. Possibility.</h3><div class="preview-cards"><span><app-icon name="projects" />Projects</span><span><app-icon name="notes" />Ideas</span><span><app-icon name="goals" />Goals</span></div><div class="preview-chart"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><span class="subtle">A place to turn the next idea into action.</span></div></div></section>
+@if(management()&&owner()){<app-portfolio-project-manager [projects]="projects()" (add)="addProject()" (edit)="editProject($event)" (closed)="management.set(false)" />}
+@if(editor()!==undefined&&owner()){<app-resource-editor type="projects" endpoint="portfolio/projects" [item]="editor()" (saved)="saved($event)" (closed)="editor.set(undefined)" />}
